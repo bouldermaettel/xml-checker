@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EUDAMED zu MIR 7.3.1</title>
+  <style>
+    body { font-family: Georgia, serif; margin: 32px auto; max-width: 1100px; padding: 0 20px; line-height: 1.55; color: #1f2937; background: #faf7f0; }
+    h1, h2 { color: #0f766e; }
+    section { background: #fffdf8; border: 1px solid #e7dcc8; border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { text-align: left; border-bottom: 1px solid #e7dcc8; padding: 10px 8px; vertical-align: top; }
+    th { color: #6b7280; font-size: 0.85rem; text-transform: uppercase; }
+    code, pre { font-family: Consolas, monospace; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 5px; }
+    pre { background: #111827; color: #f9fafb; padding: 16px; border-radius: 10px; overflow-x: auto; }
+    .tag { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: bold; }
+    .direct { background: #dcfce7; color: #166534; }
+    .transform { background: #fef3c7; color: #92400e; }
+    .manual { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>EUDAMED zu MIR 7.3.1</h1>
+
+  <section>
+    <h2>Kernaussagen</h2>
+    <p>Ordner 1 enthält MIR-7.3.1-Zielschemata. Ordner 2 enthält mehrere EUDAMED-DTX-Nachrichtentypen. Generalisiert sinnvoll konvertierbar ist nur der MIR-Zweig mit <code>serviceID = VIG_DOSSIER</code> und <code>xsi:type = vig:mir_2Type</code>.</p>
+    <p>FSCA, FSN, MTR, PSUR, PSR, NCAR und OCM_DEVICE sind fachlich andere Objekte und sollten nicht in dasselbe MIR-7.3.1-Zielschema gezwungen werden.</p>
+  </section>
+
+  <section>
+    <h2>Typen im EUDAMED-Ordner</h2>
+    <ul>
+      <li><code>001.xx</code>: PullRequests fuer <code>VIG_DOSSIER</code></li>
+      <li><code>002.xx</code>: MIR mit <code>vig:mir_2Type</code></li>
+      <li><code>003.xx</code>: FSCA mit <code>vig:fsca_2Type</code></li>
+      <li><code>004.xx</code>: FSN mit <code>vig:fsnType</code></li>
+      <li><code>005.xx</code>: MTR mit <code>vig:mtrType</code></li>
+      <li><code>006.xx</code>: PSUR mit <code>vigv1:psurType</code></li>
+      <li><code>007.xx</code>: NCAR mit <code>vig:ncar_2Type</code></li>
+      <li><code>008.xx</code>: PSR mit <code>vig:psrType</code></li>
+      <li><code>009.xx</code> und <code>010.xx</code>: OCM_DEVICE</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Mapping-Matrix fuer EUDAMED MIR nach MIR 7.3.1</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>EUDAMED Quelle</th>
+          <th>MIR Ziel</th>
+          <th>Status</th>
+          <th>Regel</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>vig:ncaReportRef</code></td><td><code>admin_info/ncaReportNo</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:startDateofIncident</code></td><td><code>admin_info/adverseEventDateFrom</code></td><td><span class="tag transform">transformieren</span></td><td>Datumsteil aus <code>dateTime</code> extrahieren</td></tr>
+        <tr><td><code>vig:endDateofIncident</code></td><td><code>admin_info/adverseEventDateTo</code></td><td><span class="tag transform">transformieren</span></td><td>Datumsteil extrahieren</td></tr>
+        <tr><td><code>vig:mfAwarenessDate</code></td><td><code>admin_info/mfrAwarenessDate</code></td><td><span class="tag transform">transformieren</span></td><td>Datumsteil extrahieren</td></tr>
+        <tr><td><code>vig:mfAwarenessDateReportability</code></td><td><code>admin_info/mfrAwarenessReportDate</code></td><td><span class="tag transform">transformieren</span></td><td>Datumsteil extrahieren</td></tr>
+        <tr><td><code>vig:reportType</code></td><td><code>admin_info/reportType</code></td><td><span class="tag transform">transformieren</span></td><td><code>INITIAL -&gt; Initial</code>, <code>FOLLOW_UP -&gt; Follow up</code></td></tr>
+        <tr><td><code>vig:eventClassification</code></td><td><code>admin_info/eventClassification</code></td><td><span class="tag transform">transformieren</span></td><td>Enum normalisieren, z. B. <code>DEATH -&gt; Death</code></td></tr>
+        <tr><td><code>vig:mf_srn</code></td><td><code>mfrDetails/mfrSRN</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:mfr</code></td><td><code>admin_info/mfrRef</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:deviceUUID/vigbase:udiDiCode</code></td><td><code>device_info/udiDI</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:udiPIvalue</code></td><td><code>device_info/udiPI</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:deviceNomenclatureCode</code></td><td><code>device_info/nomenclatureCode</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:deviceNomenclatureDescription_manual</code></td><td><code>device_info/deviceNomenclature</code></td><td><span class="tag direct">direkt</span></td><td>Fallback auf maschinelle Beschreibung erlauben</td></tr>
+        <tr><td><code>vig:affectedSerialNo</code></td><td><code>device_info/serialNum</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:affectedLotNo</code></td><td><code>device_info/batchNum</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:affectedSoftwareNo</code></td><td><code>device_info/deviceSoftwareVer</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:affectedFirmwareNo</code></td><td><code>device_info/deviceFirmwareVer</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:natureOfIncident</code></td><td><code>incident_info/eventDescription</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:patientWeight</code></td><td><code>incident_info/massKG</code></td><td><span class="tag direct">direkt</span></td><td>Ganzzahl übernehmen</td></tr>
+        <tr><td><code>vig:patientHeight</code></td><td><code>incident_info/heightCM</code></td><td><span class="tag direct">direkt</span></td><td>Ganzzahl übernehmen</td></tr>
+        <tr><td><code>vig:patientHealthConditions</code></td><td><code>incident_info/patientPriorMedication</code></td><td><span class="tag manual">manuell</span></td><td>Nur heuristisch nutzbar</td></tr>
+        <tr><td><code>vig:healthcareFacilityName</code></td><td><code>incident_info/healthcareFacilityName</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:furtherInvestigations</code></td><td><code>mfr_invest/furtherInvestigations</code></td><td><span class="tag direct">direkt</span></td><td>Text übernehmen</td></tr>
+        <tr><td><code>vig:causeInvestigationConclusions</code></td><td><code>mfr_invest/manufacturersFinalComments</code></td><td><span class="tag manual">manuell</span></td><td>Geschäftsregel nötig</td></tr>
+        <tr><td><code>brand / trade name</code></td><td><code>device_info/brandName</code></td><td><span class="tag manual">manuell</span></td><td>Pflichtfeld im Ziel, im Sample nicht klar separat vorhanden</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Python-POC</h2>
+    <p>Das lauffähige Skript liegt im Ordner <code>scripts</code> und verarbeitet nur echte EUDAMED-MIR-Dossiers.</p>
+    <pre>python3 scripts/eudamed_to_mir731.py \
+  "20251128_Vigilance - XML samples/SAMPLE_DTX_VIG_002.01.xml" \
+  "output/mir_731_from_SAMPLE_DTX_VIG_002_01.xml"</pre>
+  </section>
+</body>
+</html>

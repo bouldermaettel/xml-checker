@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<incident version="7.3.1" sCreateTimeStamp="2026-03-16T13:53:53+00:00" sFormLanguage="en">
+  <admin_info>
+    <formVersion>7.3.1</formVersion>
+    <ncaName>FR-CA-001</ncaName>
+    <ncaReportNo>NCA REPORT - VERSION 2</ncaReportNo>
+    <reportDate>2026-03-16</reportDate>
+    <adverseEventDateFrom>2024-07-02</adverseEventDateFrom>
+    <adverseEventDateTo>2024-07-02</adverseEventDateTo>
+    <mfrAwarenessDate>2024-07-02</mfrAwarenessDate>
+    <mfrAwarenessReportDate>2024-07-02</mfrAwarenessReportDate>
+    <reportType>Follow up</reportType>
+    <reportNextDate>2026-07-02</reportNextDate>
+    <eventClassification>Death</eventClassification>
+    <contact_info>
+      <reporterMfr>
+        <statusReporter>Manufacturer</statusReporter>
+        <mfrDetails>
+          <mfrName>MT-MF-000000043</mfrName>
+          <mfrSRN>MT-MF-000000043</mfrSRN>
+          <mfrContactPersonFirstName>FIRST NAME - VERSION 2</mfrContactPersonFirstName>
+          <mfrContactPersonSecondName>FAMILY NAME - VERSION 2</mfrContactPersonSecondName>
+          <mfrCity>REVIEW_REQUIRED</mfrCity>
+          <mfrCountry>MT</mfrCountry>
+          <mfrPostcode>REVIEW_REQUIRED</mfrPostcode>
+          <mfrPhone>TELEPHONE NUMBER - VERSION 2</mfrPhone>
+          <mfrEmailAddress>version2@eudamed.com</mfrEmailAddress>
+        </mfrDetails>
+      </reporterMfr>
+    </contact_info>
+    <mfrRef>MF-REF-1714378425MIR</mfrRef>
+  </admin_info>
+  <device_info>
+    <udiDI>222221485260692</udiDI>
+    <udiPI>UDI PI VALUE - VERSON 2</udiPI>
+    <nomenclatureCode>A0101010101</nomenclatureCode>
+    <brandName>NOMENCLATURE DESCRIPTION - VERSION 2</brandName>
+    <deviceDescription>NATURE OF INCIDENT - VERSION 2</deviceDescription>
+    <deviceNomenclature>NOMENCLATURE DESCRIPTION - VERSION 2</deviceNomenclature>
+    <serialNum>SERIAL NUMBER - VERSION 2</serialNum>
+    <batchNum>LOT NUMBER - VERSION 2</batchNum>
+    <deviceSoftwareVer>SOFTWARE NUMBER - VERSION 2</deviceSoftwareVer>
+    <deviceFirmwareVer>FIRMWARE NUMBER - VERSION 2</deviceFirmwareVer>
+    <deviceMfrDate>2015-01-23</deviceMfrDate>
+    <deviceExpiryDate>2027-01-22</deviceExpiryDate>
+  </device_info>
+  <incident_info>
+    <clinical_event_info>
+      <eventDescription>NATURE OF INCIDENT - VERSION 2</eventDescription>
+      <imdrfCodeChoice1>UNK</imdrfCodeChoice1>
+      <currentDeviceLocation>Unknown</currentDeviceLocation>
+    </clinical_event_info>
+    <patient_info>
+      <imdrfClinicalCodeChoice1>UNK</imdrfClinicalCodeChoice1>
+      <imdrfHealthCodeChoice1>UNK</imdrfHealthCodeChoice1>
+      <Gender>Other</Gender>
+      <massKG>77</massKG>
+      <heightCM>155</heightCM>
+      <patientPriorMedication>PATIENT HEALTH CONDITIONS - VERSION 2</patientPriorMedication>
+    </patient_info>
+    <initial_reporter_info>
+      <initialReporterRole>Other</initialReporterRole>
+      <initialReporterRoleOther>INITIAL REPORTER OTHER ROLE - VERSION 2</initialReporterRoleOther>
+      <healthcareFacilityName>HEALTHCARE FACILITY NAME - VERSION 2</healthcareFacilityName>
+      <healthcareFacilityRepNum>HEALTHCARE FACILITY NUMBER - VERSION 2</healthcareFacilityRepNum>
+      <healthcareFacilityCountry>MT</healthcareFacilityCountry>
+    </initial_reporter_info>
+  </incident_info>
+  <mfr_invest>
+    <manufacturersPrelimAnalysis>REVIEW_REQUIRED</manufacturersPrelimAnalysis>
+    <manufacturersInitialCorrecAction>REVIEW_REQUIRED</manufacturersInitialCorrecAction>
+    <furtherInvestigations>REVIEW_REQUIRED</furtherInvestigations>
+  </mfr_invest>
+</incident>
