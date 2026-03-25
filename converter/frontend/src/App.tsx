@@ -1,5 +1,6 @@
 import {
   startTransition,
+  useEffect,
   useState,
   type FormEvent,
   type ReactNode,
@@ -30,6 +31,48 @@ type ConvertMeta = {
 type ConvertResponse = {
   filename: string;
   xml: string;
+  detectedFormat: string;
+  warnings: string[];
+  inputSha1: string;
+  conversionId?: number;
+  meta: ConvertMeta;
+};
+
+type ConversionHistoryItem = {
+  id: number;
+  inputFilename: string;
+  detectedFormat: string;
+  inputSha1: string;
+  filename: string;
+  meta: ConvertMeta;
+  status: string;
+  warnings: string[];
+  createdAt: string;
+};
+
+type ConversionHistoryResponse = {
+  items: ConversionHistoryItem[];
+};
+
+type DbUploadResponse = {
+  conversionId?: number;
+  inputFilename: string;
+  detectedFormat: string;
+  inputSha1: string;
+  status: string;
+  warnings: string[];
+};
+
+type ConversionDetail = {
+  id: number;
+  inputFilename: string;
+  detectedFormat: string;
+  inputSha1: string;
+  filename: string;
+  xml: string;
+  status: string;
+  warnings: string[];
+  createdAt: string;
   meta: ConvertMeta;
 };
 
@@ -39,29 +82,67 @@ function App() {
   const [file, setFile] = useState<File | null>(null);
   const [response, setResponse] = useState<ConvertResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingMock, setIsUploadingMock] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [summaryHtml, setSummaryHtml] = useState("");
   const [summaryError, setSummaryError] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [historyItems, setHistoryItems] = useState<ConversionHistoryItem[]>([]);
+  const [historyError, setHistoryError] = useState("");
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<ConversionDetail | null>(
+    null,
+  );
+  const [recordError, setRecordError] = useState("");
+  const [isRecordLoading, setIsRecordLoading] = useState(false);
+
+  useEffect(() => {
+    void loadHistory();
+  }, []);
+
+  async function loadHistory() {
+    setIsHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const fetchResponse = await fetch("/api/conversions?limit=50");
+      if (!fetchResponse.ok) {
+        const detail = await fetchResponse.text();
+        throw new Error(detail || "Unable to load conversion history.");
+      }
+      const payload =
+        (await fetchResponse.json()) as ConversionHistoryResponse;
+      setHistoryItems(payload.items ?? []);
+    } catch (error) {
+      setHistoryError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load conversion history.",
+      );
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!file) {
-      setErrorMessage("Select an EUDAMED XML file first.");
+      setErrorMessage("Select an XML file first.");
       return;
     }
 
     setIsSubmitting(true);
     setErrorMessage("");
+    setUploadMessage("");
     setResponse(null);
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const fetchResponse = await fetch("/api/convert", {
+      const fetchResponse = await fetch("/api/convert?persist=true", {
         method: "POST",
         body: formData,
       });
@@ -79,6 +160,7 @@ function App() {
 
       const payload = (await fetchResponse.json()) as ConvertResponse;
       startTransition(() => setResponse(payload));
+      void loadHistory();
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -87,6 +169,89 @@ function App() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDbUpload() {
+    if (!file) {
+      setErrorMessage("Select an XML file first.");
+      return;
+    }
+
+    setIsUploadingMock(true);
+    setErrorMessage("");
+    setUploadMessage("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const fetchResponse = await fetch("/api/upload-db", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!fetchResponse.ok) {
+        const detail = await fetchResponse.text();
+        let message = detail;
+        try {
+          message = JSON.parse(detail)?.detail ?? detail;
+        } catch {
+          // keep raw text
+        }
+        throw new Error(message || "Upload failed.");
+      }
+
+      const payload = (await fetchResponse.json()) as DbUploadResponse;
+      setUploadMessage(
+        `Uploaded ${payload.inputFilename} to database (${payload.detectedFormat}, ${payload.status}).`,
+      );
+      void loadHistory();
+      // Show DB record details immediately after upload
+      if (payload.conversionId) {
+        await openRecord(payload.conversionId);
+      } else {
+        // fallback: open most recent record if available
+        setTimeout(async () => {
+          try {
+            const resp = await fetch('/api/conversions?limit=1');
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data.items && data.items.length > 0) {
+                await openRecord(data.items[0].id);
+              }
+            }
+          } catch {}
+        }, 500);
+      }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unexpected error during upload.",
+      );
+    } finally {
+      setIsUploadingMock(false);
+    }
+  }
+
+  async function openRecord(id: number) {
+    setIsRecordLoading(true);
+    setRecordError("");
+    try {
+      const fetchResponse = await fetch(`/api/conversions/${id}`);
+      if (!fetchResponse.ok) {
+        const detail = await fetchResponse.text();
+        throw new Error(detail || "Unable to load database record.");
+      }
+      const payload = (await fetchResponse.json()) as ConversionDetail;
+      setSelectedRecord(payload);
+    } catch (error) {
+      setRecordError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load database record.",
+      );
+    } finally {
+      setIsRecordLoading(false);
     }
   }
 
@@ -173,8 +338,8 @@ function App() {
                 icon={<Download className="h-4 w-4" />}
               />
               <StatPill
-                label="Report type"
-                value={response?.meta.reportType || "–"}
+                label="Detected format"
+                value={response?.detectedFormat || "–"}
                 icon={<CheckCircle className="h-4 w-4" />}
               />
             </div>
@@ -204,10 +369,17 @@ function App() {
                 </div>
               ) : null}
 
+              {uploadMessage ? (
+                <div className="flex items-start gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{uploadMessage}</span>
+                </div>
+              ) : null}
+
               <button
                 type="submit"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-[1.25rem] bg-stone-950 px-5 py-4 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
-                disabled={isSubmitting || !file}
+                disabled={isSubmitting || isUploadingMock || !file}
               >
                 {isSubmitting ? (
                   <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -215,6 +387,20 @@ function App() {
                   <Sparkles className="h-4 w-4" />
                 )}
                 {isSubmitting ? "Converting…" : "Convert to MIR 7.3.1"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDbUpload}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[1.25rem] border border-stone-300 bg-white px-5 py-4 text-sm font-medium text-stone-900 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:border-stone-200 disabled:text-stone-400"
+                disabled={isSubmitting || isUploadingMock || !file}
+              >
+                {isUploadingMock ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UploadCloud className="h-4 w-4" />
+                )}
+                {isUploadingMock ? "Uploading…" : "Upload to Database"}
               </button>
             </form>
           </section>
@@ -297,6 +483,12 @@ function App() {
                       value={response.meta.payloadType}
                     />
                   </div>
+                  {response.warnings.length > 0 ? (
+                    <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                      <div className="font-semibold">Warnings ({response.warnings.length})</div>
+                      <div className="mt-1">{response.warnings.join(", ")}</div>
+                    </div>
+                  ) : null}
                   {/* XML preview */}
                   <div className="rounded-[1.5rem] border border-stone-900/10 bg-stone-950 p-4">
                     <p className="mb-2 text-[0.65rem] uppercase tracking-[0.22em] text-stone-500">
@@ -312,19 +504,178 @@ function App() {
           </section>
         </main>
 
+        <section className="mt-6 rounded-[2rem] border border-stone-900/10 bg-white/75 p-5 shadow-[0_18px_55px_rgba(120,113,108,0.12)] backdrop-blur sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-stone-500">
+                Step 3
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
+                Conversion History
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadHistory()}
+              className="inline-flex items-center justify-center gap-2 rounded-[1.1rem] border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-900 transition hover:bg-stone-100"
+            >
+              {isHistoryLoading ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              Refresh history
+            </button>
+          </div>
+
+          {historyError ? (
+            <div className="mt-4 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">
+              {historyError}
+            </div>
+          ) : null}
+
+          <div className="mt-5 overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-stone-100 text-stone-700">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">ID</th>
+                  <th className="px-4 py-3 font-semibold">Input File</th>
+                  <th className="px-4 py-3 font-semibold">Detected Format</th>
+                  <th className="px-4 py-3 font-semibold">Report Type</th>
+                  <th className="px-4 py-3 font-semibold">Classification</th>
+                  <th className="px-4 py-3 font-semibold">NCA Report</th>
+                  <th className="px-4 py-3 font-semibold">MFR Ref</th>
+                  <th className="px-4 py-3 font-semibold">Brand</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Warnings</th>
+                  <th className="px-4 py-3 font-semibold">Created At</th>
+                  <th className="px-4 py-3 font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyItems.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-6 text-stone-500" colSpan={12}>
+                      No saved records yet. Convert or upload a file to populate this table.
+                    </td>
+                  </tr>
+                ) : (
+                  historyItems.map((item) => (
+                    <tr key={item.id} className="border-t border-stone-200">
+                      <td className="px-4 py-3 font-mono text-xs">{item.id}</td>
+                      <td className="px-4 py-3">{item.inputFilename}</td>
+                      <td className="px-4 py-3">{item.detectedFormat}</td>
+                      <td className="px-4 py-3">{item.meta?.reportType || "-"}</td>
+                      <td className="px-4 py-3">{item.meta?.eventClassification || "-"}</td>
+                      <td className="px-4 py-3">{item.meta?.ncaReportNo || "-"}</td>
+                      <td className="px-4 py-3">{item.meta?.mfrRef || "-"}</td>
+                      <td className="px-4 py-3">{item.meta?.brandName || "-"}</td>
+                      <td className="px-4 py-3">{item.status}</td>
+                      <td className="px-4 py-3">
+                        {item.warnings.length > 0 ? item.warnings.join(", ") : "-"}
+                      </td>
+                      <td className="px-4 py-3">{item.createdAt}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => void openRecord(item.id)}
+                          className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-800 transition hover:bg-stone-100"
+                        >
+                          View DB Values
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {recordError ? (
+            <div className="mt-4 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">
+              {recordError}
+            </div>
+          ) : null}
+
+          {isRecordLoading ? (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-stone-700">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              Loading database record...
+            </div>
+          ) : null}
+
+          {selectedRecord ? (
+            <div className="mt-5 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-stone-500">
+                Database Record #{selectedRecord.id}
+              </div>
+              <div className="mt-3 rounded-xl border border-stone-200 bg-white p-3">
+                <table className="w-full text-sm text-stone-700">
+                  <tbody>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Input</td>
+                      <td className="py-1">{selectedRecord.inputFilename}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Stored as</td>
+                      <td className="py-1">{selectedRecord.filename}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Format</td>
+                      <td className="py-1">{selectedRecord.detectedFormat}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Status</td>
+                      <td className="py-1">{selectedRecord.status}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Report Type</td>
+                      <td className="py-1">{selectedRecord.meta.reportType || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Classification</td>
+                      <td className="py-1">{selectedRecord.meta.eventClassification || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">NCA Report</td>
+                      <td className="py-1">{selectedRecord.meta.ncaReportNo || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">MFR Ref</td>
+                      <td className="py-1">{selectedRecord.meta.mfrRef || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Brand</td>
+                      <td className="py-1">{selectedRecord.meta.brandName || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Service</td>
+                      <td className="py-1">{selectedRecord.meta.serviceId || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-stone-500">Payload type</td>
+                      <td className="py-1">{selectedRecord.meta.payloadType || "-"}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-3 rounded-xl border border-stone-300 bg-stone-950 p-3">
+                <div className="mb-2 text-[0.65rem] uppercase tracking-[0.2em] text-stone-500">
+                  Stored XML (first {PREVIEW_LINES} lines)
+                </div>
+                <pre className="max-h-72 overflow-auto whitespace-pre font-mono text-[0.72rem] leading-5 text-stone-200">
+                  {selectedRecord.xml.split("\n").slice(0, PREVIEW_LINES).join("\n")}
+                </pre>
+              </div>
+            </div>
+          ) : null}
+        </section>
+
         {/* ── Footer ── */}
         <footer className="mt-6 flex flex-col gap-3 rounded-[1.5rem] border border-stone-900/10 bg-white/60 px-5 py-4 text-sm text-stone-500 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Only{" "}
-            <code className="rounded bg-stone-100 px-1 font-mono text-stone-700">
-              VIG_DOSSIER
-            </code>{" "}
-            /{" "}
-            <code className="rounded bg-stone-100 px-1 font-mono text-stone-700">
-              vig:mir_2Type
-            </code>{" "}
-            files are supported. FSCA, FSN, MTR and other types will return an
-            error.
+            Supported inputs include MIR 7.3.x incident XML and EUDAMED
+            VIG_DOSSIER mir_2Type XML. Other XML types will return an error.
           </span>
           <div className="flex items-center gap-3">
             <button
@@ -412,9 +763,9 @@ function FileDrop({
       />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="font-medium text-stone-900">EUDAMED XML file</div>
+          <div className="font-medium text-stone-900">MIR or EUDAMED XML file</div>
           <div className="mt-1 text-sm text-stone-500">
-            Vigilance DTX export from EUDAMED portal
+            MIR 7.3.x incident or Vigilance DTX export
           </div>
         </div>
         <div className="rounded-2xl bg-white p-3 text-stone-600 shadow-sm transition group-hover:-translate-y-0.5">
