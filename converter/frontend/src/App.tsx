@@ -44,7 +44,6 @@ type ConversionHistoryItem = {
   detectedFormat: string;
   inputSha1: string;
   filename: string;
-  meta: ConvertMeta;
   status: string;
   warnings: string[];
   createdAt: string;
@@ -74,9 +73,62 @@ type ConversionDetail = {
   warnings: string[];
   createdAt: string;
   meta: ConvertMeta;
+  xmlParams?: Record<string, string>;
 };
 
 const PREVIEW_LINES = 40;
+
+function shortParamKey(rawKey: string): string {
+  // Examples:
+  // - /incident[1]/admin_info[1]/.../ARAddress[1]/text  -> ARAddress
+  // - /incident[1]/@version                              -> version
+  // - /PullRequest[1]/recipient[1]/service[1]/text       -> service
+  const parts = rawKey.split("/").filter(Boolean);
+  if (parts.length === 0) return rawKey;
+
+  const last = parts[parts.length - 1];
+  const prev = parts.length >= 2 ? parts[parts.length - 2] : "";
+
+  const stripIndex = (s: string) => s.replace(/\[\d+\]$/, "");
+
+  if (last === "text") {
+    return stripIndex(prev) || rawKey;
+  }
+
+  if (last.startsWith("@")) {
+    return last.slice(1) || rawKey;
+  }
+
+  return stripIndex(last) || rawKey;
+}
+
+function formatXmlParams(params?: Record<string, string>): string[] {
+  if (!params) return [];
+  const grouped = new Map<string, string[]>();
+
+  for (const [k, v] of Object.entries(params)) {
+    const shortKey = shortParamKey(k);
+    const existing = grouped.get(shortKey) ?? [];
+    existing.push(v ?? "");
+    grouped.set(shortKey, existing);
+  }
+
+  const lines: string[] = [];
+  for (const key of Array.from(grouped.keys()).sort((a, b) => a.localeCompare(b))) {
+    const values = (grouped.get(key) ?? []).map((x) => (x ?? "").trim());
+    const unique = Array.from(new Set(values));
+    const nonEmpty = unique.filter((x) => x !== "");
+    const rendered =
+      nonEmpty.length === 0
+        ? '""'
+        : nonEmpty.length === 1
+          ? nonEmpty[0]
+          : nonEmpty.join(" | ");
+    lines.push(`${key}: ${rendered}`);
+  }
+
+  return lines;
+}
 
 function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -92,6 +144,8 @@ function App() {
   const [historyItems, setHistoryItems] = useState<ConversionHistoryItem[]>([]);
   const [historyError, setHistoryError] = useState("");
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [isResettingDb, setIsResettingDb] = useState(false);
+  const [historyInfo, setHistoryInfo] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<ConversionDetail | null>(
     null,
   );
@@ -122,6 +176,43 @@ function App() {
       );
     } finally {
       setIsHistoryLoading(false);
+    }
+  }
+
+  async function resetDatabase() {
+    const confirmed = window.confirm(
+      "Delete all saved conversion records from the database?",
+    );
+    if (!confirmed) return;
+
+    setIsResettingDb(true);
+    setHistoryError("");
+    setHistoryInfo("");
+
+    try {
+      const fetchResponse = await fetch("/api/conversions/reset", {
+        method: "POST",
+      });
+      if (!fetchResponse.ok) {
+        const detail = await fetchResponse.text();
+        throw new Error(detail || "Unable to reset database.");
+      }
+      const payload = (await fetchResponse.json()) as {
+        ok: boolean;
+        clearedCount: number;
+      };
+      setHistoryItems([]);
+      setSelectedRecord(null);
+      setHistoryInfo(
+        `Database reset complete. Deleted ${payload.clearedCount} record(s).`,
+      );
+      void loadHistory();
+    } catch (error) {
+      setHistoryError(
+        error instanceof Error ? error.message : "Unable to reset database.",
+      );
+    } finally {
+      setIsResettingDb(false);
     }
   }
 
@@ -526,11 +617,30 @@ function App() {
               )}
               Refresh history
             </button>
+            <button
+              type="button"
+              onClick={() => void resetDatabase()}
+              className="inline-flex items-center justify-center gap-2 rounded-[1.1rem] border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isResettingDb || isHistoryLoading}
+            >
+              {isResettingDb ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              {isResettingDb ? "Deleting..." : "Delete database"}
+            </button>
           </div>
 
           {historyError ? (
             <div className="mt-4 rounded-xl border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">
               {historyError}
+            </div>
+          ) : null}
+
+          {historyInfo ? (
+            <div className="mt-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-700">
+              {historyInfo}
             </div>
           ) : null}
 
@@ -541,11 +651,6 @@ function App() {
                   <th className="px-4 py-3 font-semibold">ID</th>
                   <th className="px-4 py-3 font-semibold">Input File</th>
                   <th className="px-4 py-3 font-semibold">Detected Format</th>
-                  <th className="px-4 py-3 font-semibold">Report Type</th>
-                  <th className="px-4 py-3 font-semibold">Classification</th>
-                  <th className="px-4 py-3 font-semibold">NCA Report</th>
-                  <th className="px-4 py-3 font-semibold">MFR Ref</th>
-                  <th className="px-4 py-3 font-semibold">Brand</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Warnings</th>
                   <th className="px-4 py-3 font-semibold">Created At</th>
@@ -555,7 +660,7 @@ function App() {
               <tbody>
                 {historyItems.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-6 text-stone-500" colSpan={12}>
+                    <td className="px-4 py-6 text-stone-500" colSpan={7}>
                       No saved records yet. Convert or upload a file to populate this table.
                     </td>
                   </tr>
@@ -565,11 +670,6 @@ function App() {
                       <td className="px-4 py-3 font-mono text-xs">{item.id}</td>
                       <td className="px-4 py-3">{item.inputFilename}</td>
                       <td className="px-4 py-3">{item.detectedFormat}</td>
-                      <td className="px-4 py-3">{item.meta?.reportType || "-"}</td>
-                      <td className="px-4 py-3">{item.meta?.eventClassification || "-"}</td>
-                      <td className="px-4 py-3">{item.meta?.ncaReportNo || "-"}</td>
-                      <td className="px-4 py-3">{item.meta?.mfrRef || "-"}</td>
-                      <td className="px-4 py-3">{item.meta?.brandName || "-"}</td>
                       <td className="px-4 py-3">{item.status}</td>
                       <td className="px-4 py-3">
                         {item.warnings.length > 0 ? item.warnings.join(", ") : "-"}
@@ -609,55 +709,34 @@ function App() {
               <div className="text-xs uppercase tracking-[0.2em] text-stone-500">
                 Database Record #{selectedRecord.id}
               </div>
-              <div className="mt-3 rounded-xl border border-stone-200 bg-white p-3">
-                <table className="w-full text-sm text-stone-700">
-                  <tbody>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Input</td>
-                      <td className="py-1">{selectedRecord.inputFilename}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Stored as</td>
-                      <td className="py-1">{selectedRecord.filename}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Format</td>
-                      <td className="py-1">{selectedRecord.detectedFormat}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Status</td>
-                      <td className="py-1">{selectedRecord.status}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Report Type</td>
-                      <td className="py-1">{selectedRecord.meta.reportType || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Classification</td>
-                      <td className="py-1">{selectedRecord.meta.eventClassification || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">NCA Report</td>
-                      <td className="py-1">{selectedRecord.meta.ncaReportNo || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">MFR Ref</td>
-                      <td className="py-1">{selectedRecord.meta.mfrRef || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Brand</td>
-                      <td className="py-1">{selectedRecord.meta.brandName || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Service</td>
-                      <td className="py-1">{selectedRecord.meta.serviceId || "-"}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-3 font-medium text-stone-500">Payload type</td>
-                      <td className="py-1">{selectedRecord.meta.payloadType || "-"}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="mt-3 rounded-xl border border-stone-300 bg-white p-3">
+                <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap break-words font-mono text-[0.72rem] leading-5 text-stone-800">
+                  {[
+                    `Input: ${selectedRecord.inputFilename ?? ""}`,
+                    `Stored as: ${selectedRecord.filename ?? ""}`,
+                    `Format: ${selectedRecord.detectedFormat ?? ""}`,
+                    `Status: ${selectedRecord.status ?? ""}`,
+                    `Report Type: ${
+                      selectedRecord.meta.reportType === ""
+                        ? '""'
+                        : selectedRecord.meta.reportType ?? ""
+                    }`,
+                    `Classification: ${
+                      selectedRecord.meta.eventClassification === ""
+                        ? '""'
+                        : selectedRecord.meta.eventClassification ?? ""
+                    }`,
+                    `MFR Ref: ${
+                      selectedRecord.meta.mfrRef === "" ? '""' : selectedRecord.meta.mfrRef ?? ""
+                    }`,
+                    `NCA Report: ${
+                      selectedRecord.meta.ncaReportNo === ""
+                        ? '""'
+                        : selectedRecord.meta.ncaReportNo ?? ""
+                    }`,
+                    ...formatXmlParams(selectedRecord.xmlParams),
+                  ].join("\n")}
+                </pre>
               </div>
               <div className="mt-3 rounded-xl border border-stone-300 bg-stone-950 p-3">
                 <div className="mb-2 text-[0.65rem] uppercase tracking-[0.2em] text-stone-500">
