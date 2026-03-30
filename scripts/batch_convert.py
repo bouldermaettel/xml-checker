@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import io
-import re
 import sys
 from pathlib import Path
 
-from lxml import etree
-
 # Add the scripts directory to the path so we can import the converter
 sys.path.insert(0, str(Path(__file__).parent))
-from eudamed_to_mir731 import build_tree, NS
+from xml_router import FORMAT_UNKNOWN, process_xml
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,42 +47,20 @@ def main() -> int:
     ok = skipped = errors = 0
     for xml_path in xml_files:
         raw = xml_path.read_bytes()
-        cleaned = re.sub(rb"<!--.*?-->", b"", raw, flags=re.DOTALL)
-        try:
-            source_tree = etree.parse(io.BytesIO(cleaned))
-        except etree.XMLSyntaxError as exc:
-            print(f"[PARSE ERROR] {xml_path.name}: {exc}")
-            errors += 1
-            continue
-
-        # Check if this file is a supported MIR payload
-        root = source_tree.getroot()
-        service_id = None
-        payload_type = None
-        try:
-            svc_nodes = root.xpath(
-                "./message:recipient/message:service/service:serviceID", namespaces=NS
-            )
-            service_id = svc_nodes[0].text.strip() if svc_nodes else None
-            pt_nodes = root.xpath(
-                "./message:payload/vigbase:Dossier/vigbase:Data/@xsi:type", namespaces=NS
-            )
-            payload_type = pt_nodes[0].strip() if pt_nodes else None
-        except Exception:
-            pass
-
-        if service_id != "VIG_DOSSIER" or payload_type != "vig:mir_2Type":
-            print(f"[SKIP]  {xml_path.name}  (service={service_id}, type={payload_type})")
-            skipped += 1
-            continue
 
         out_path = output_dir / f"mir731_{xml_path.stem}.xml"
         try:
-            target_tree = build_tree(source_tree)
-            out_path.write_bytes(
-                etree.tostring(target_tree, pretty_print=True, xml_declaration=True, encoding="UTF-8")
-            )
-            print(f"[OK]    {xml_path.name}  →  {out_path.name}")
+            processed = process_xml(raw, best_effort=True, full_template=False)
+            detected = processed["detected_format"]
+            if detected == FORMAT_UNKNOWN:
+                print(f"[SKIP]  {xml_path.name}  (unsupported format)")
+                skipped += 1
+                continue
+
+            out_path.write_bytes(processed["xml_bytes"])
+            warnings = processed["warnings"]
+            warning_hint = f" warnings={len(warnings)}" if warnings else ""
+            print(f"[OK]    {xml_path.name}  →  {out_path.name}  ({detected}{warning_hint})")
             ok += 1
         except Exception as exc:
             print(f"[ERROR] {xml_path.name}: {exc}")

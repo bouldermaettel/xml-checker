@@ -1,0 +1,132 @@
+# EUDAMED ↔ MIR 7.3.1 Exhaustive Mapping Table
+# Columns: EUDAMED Field Path,MIR Field Path,Mapping Type,Rule/Notes
+EUDAMED Field Path,MIR Field Path,Mapping Type,Rule/Notes
+vig:administrativeInformation/vig:adminInfoSection/vig:reportType,admin_info/reportType,transform,Enum normalization (INITIAL→Initial, FOLLOW_UP→Follow up, FINAL→Final, FSCA_INITIAL→Initial, FSCA_FOLLOW_UP→Follow up, FSCA_FINAL→Final)
+vig:administrativeInformation/vig:adminInfoSection/vig:ncaReportRef,admin_info/ncaReportNo,direct,Copy text
+vig:administrativeInformation/vig:dateOfIncidentSection/vig:startDateofIncident,admin_info/adverseEventDateFrom,transform,Extract date part from dateTime
+vig:administrativeInformation/vig:dateOfIncidentSection/vig:endDateofIncident,admin_info/adverseEventDateTo,transform,Extract date part from dateTime
+vig:administrativeInformation/vig:dateOfIncidentSection/vig:mfAwarenessDate,admin_info/mfrAwarenessDate,transform,Extract date part from dateTime
+vig:administrativeInformation/vig:dateOfIncidentSection/vig:mfAwarenessDateReportability,admin_info/mfrAwarenessReportDate,transform,Extract date part from dateTime
+vig:administrativeInformation/vig:dateOfIncidentSection/vig:reportNextDate,admin_info/reportNextDate,transform,Extract date part from dateTime
+vig:administrativeInformation/vig:dateOfIncidentSection/vig:eventClassification,admin_info/eventClassification,transform,Enum normalization (DEATH→Death)
+vig:mir_2FieldsType/vig:mf_srn,admin_info/contact_info/reporterMfr/mfrDetails/mfrSRN,direct,Copy text
+vig:mir_2FieldsType/vig:mfr,admin_info/mfrRef,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:deviceInformationSubHead/vig:deviceNomenclatureCode,device_info/nomenclatureCode,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:deviceInformationSubHead/vig:deviceNomenclatureDescription_manual,device_info/deviceNomenclature,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:udiPIvalue,device_info/udiPI,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:affectedSerialNo,device_info/serialNum,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:affectedLotNo,device_info/batchNum,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:affectedSoftwareNo,device_info/deviceSoftwareVer,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:affectedFirmwareNo,device_info/deviceFirmwareVer,direct,Copy text
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:affectedDeviceManufacturingDate,device_info/deviceMfrDate,transform,Extract date part from dateTime
+vig:deviceInformationTab/vig:mirDeviceInformation/vig:deviceInformation/vig:udiPISection/vig:affectedDeviceExpiryDate,device_info/deviceExpiryDate,transform,Extract date part from dateTime
+vig:incidentInformation/vig:incidentInformationSection/vig:natureOfIncident,incident_info/clinical_event_info/eventDescription,direct,Copy text
+vig:clinicalInformation/vig:patientGender,incident_info/patient_info/Gender,transform,Enum normalization
+vig:clinicalInformation/vig:patientWeight,incident_info/patient_info/massKG,direct,Copy text
+vig:clinicalInformation/vig:patientHeight,incident_info/patient_info/heightCM,direct,Copy text
+vig:clinicalInformation/vig:patientHealthConditions,incident_info/patient_info/patientPriorMedication,manual,Heuristic/manual mapping
+vig:initialReporter/vig:initialReporterRole,incident_info/initial_reporter_info/initialReporterRole,transform,Enum normalization
+vig:initialReporter/vig:initialReporterOtherRole,incident_info/initial_reporter_info/initialReporterRoleOther,direct,Copy text
+vig:initialReporter/vig:healthcareFacilityName,incident_info/initial_reporter_info/healthcareFacilityName,direct,Copy text
+vig:initialReporter/vig:healthcareFacilityNumber,incident_info/initial_reporter_info/healthcareFacilityRepNum,direct,Copy text
+# --- Additional MIR 7.3.1 fields (best-effort / uncertainty) ---
+vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm[@ordinal='1']/vig:ncaRefNumber,admin_info/ncaEudamedNum,direct,Copy first ordinal(=1) NCA ref number
+vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm[@ordinal='1']/vig:mfrRefNumber,admin_info/refNumEudamed,direct,Copy first ordinal(=1) MFR ref number
+vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm[@ordinal='1']/vig:ncaRefNumber,admin_info/ncaRefMultiDev,direct,Copy first ordinal(=1) NCA ref number
+vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm/vig:ncaRefNumber,admin_info/ncaRefMultiDevLI,direct,Copy all ordinal entries (unbounded list)
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm[@ordinal='1']/vig:ncaRefNumber,admin_info/eudamedRefMultiDev,manual,Heuristic reuse NCA ref number
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm/vig:ncaRefNumber,admin_info/eudamedRefMultiDevLI,manual,Heuristic reuse NCA ref number list
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm[@ordinal='1']/vig:mfrRefNumber,admin_info/mfrRefMultiDev,direct,Copy ordinal=1 MFR ref number
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersOtherMIRSection/vig:listOfMIRForm/vig:mfrRefNumber,admin_info/mfrRefMultiDevLI,direct,Copy all MFR ref numbers
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersFSCASection/vig:listOfFSCANumbers[@ordinal='1']/vig:ncaFSCANumber,admin_info/ncaRefFSCA,direct,Copy ordinal=1 NCA FSCA ref number
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersFSCASection/vig:listOfFSCANumbers/vig:ncaFSCANumber,admin_info/ncaRefFSCALI,direct,Copy all NCA FSCA ref numbers
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersFSCASection/vig:listOfFSCANumbers[@ordinal='1']/vig:ncaFSCANumber,admin_info/eudamedRefFSCA,manual,Heuristic reuse NCA FSCA ref number
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersFSCASection/vig:listOfFSCANumbers/vig:ncaFSCANumber,admin_info/eudamedRefFSCALI,manual,Heuristic reuse NCA FSCA ref numbers list
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersFSCASection/vig:listOfFSCANumbers[@ordinal='1']/vig:mfrFSCANumber,admin_info/mfrRefFSCA,direct,Copy ordinal=1 MFR FSCA ref number
+,vig:administrativeInformation/vig:otherReportsReferencesSection/vig:refNumbersFSCASection/vig:listOfFSCANumbers/vig:mfrFSCANumber,admin_info/mfrRefFSCALI,direct,Copy all MFR FSCA ref numbers
+,vigbase:DossierExtId,admin_info/psrId,manual,Only when vig:is_psr_related=true
+,vigbase:DossierExtId,admin_info/psrIdLI,manual,Only when vig:is_psr_related=true
+,vig:pmcf_pmpfInvestigationSection/vig:isPMCF,admin_info/pmcfpmpfQuestion,transform,Convert isPMCF boolean to Yes/No
+,vig:pmcf_pmpfInvestigationSection/vig:pmcf_pmpfInvestigationID,admin_info/pmcfpmpfId,direct,Copy PMCF/PMPF investigation id
+,vig:pmcf_pmpfInvestigationSection/vig:pmcf_pmpfInvestigationID,admin_info/pmcfpmpfIdLI,direct,Copy all PMCF/PMPF investigation ids
+,vig:deviceUUID/vigbase:issuingAgency,device_info/udiDI_Entity,manual,Best-effort issuingAgency
+,vig:deviceUUID/vigbase:udiDiCode,device_info/udiDIBasic,manual,Best-effort udiDiCode
+,vig:deviceUUID/vigbase:issuingAgency,device_info/Basic_Entity,manual,Best-effort issuingAgency
+,vig:deviceKnownIdentifier,device_info/udiDIUnitUse,manual,Best-effort deviceKnownIdentifier
+,vig:deviceKnownIdentifier,device_info/UnitofUse_Entity,manual,Best-effort deviceKnownIdentifier
+,vig:deviceNomenclatureCode,device_info/nomenclatureSystem,manual,Heuristic deviceNomenclatureCode
+,vig:deviceNomenclatureDescription_manual,device_info/nomenclatureSystemOther,manual,Best-effort manual nomenclature description
+,vig:deviceModel,device_info/modelNum,manual,Best-effort deviceModel (may be different ns)
+,vig:deviceNomenclatureCode,device_info/catalogNum,manual,Best-effort deviceNomenclatureCode
+,vig:implantedDeviceSection/vig:implantedDeviceDate/vig:from,device_info/ImplantedDateFrom,manual,Best-effort implanted date
+,vig:implantedDeviceSection/vig:implantedDeviceDate/vig:to,device_info/ImplantedDateTo,manual,Best-effort implanted date
+,vig:implantedDeviceSection/vig:explantDeviceDate/vig:from,device_info/ExplantedDateFrom,manual,Best-effort explanted date
+,vig:implantedDeviceSection/vig:explantDeviceDate/vig:to,device_info/ExplantedDateTo,manual,Best-effort explanted date
+,vig:implantDuration,device_info/implantDuration,manual,Best-effort implantDuration
+,vig:implantedDeviceSection/vig:implantFacilityName,device_info/implantFacilityName,manual,Best-effort implantFacilityName
+,vig:implantedDeviceSection/vig:explantFacilityName,device_info/explantFacilityName,manual,Best-effort explantFacilityName
+,vig:nbNumber,device_info/nbIdNum,direct,Copy nbNumber (first)
+,vig:certificateNumber,device_info/nbCertNum,direct,Copy certificateNumber (first)
+,vig:certificateNumber,device_info/nbCertNumLI,direct,Copy all certificateNumber values
+,vig:nbNumber,device_info/nbIdNum2,direct,Copy nbNumber (second)
+,vig:certificateNumber,device_info/nbCertNum2,direct,Copy certificateNumber (second)
+,vig:certificateNumber,device_info/nbCertNum2LI,direct,Copy certificateNumber values after first
+,vig:deviceDateSection/vig:deviceDateMap/vig:deviceYear,device_info/deviceMarketDateType,manual,Heuristic market date type from deviceDate
+,vig:deviceDateSection/vig:deviceDateMap/vig:deviceDate,device_info/deviceMarketDate,manual,Heuristic: fill year+month from deviceYear/deviceMonth
+,vig:applicableLegislation,device_info/AppLegislationUnknown,manual,Map applicableLegislation
+,vig:deviceRiskClassMDR,device_info/deviceClass,manual,Best-effort risk class MDR
+,vig:deviceRiskClassMDR,device_info/deviceClassMDD,manual,Best-effort risk class MDR
+,vig:deviceRiskClassMDR,device_info/deviceClassIVDD,manual,Best-effort risk class MDR
+,vig:deviceRiskClassMDR,device_info/deviceClassMDR,manual,Best-effort risk class MDR
+,vig:deviceRiskClassMDR,device_info/deviceClassMDRType,manual,Best-effort risk class type
+,vig:deviceRiskClassMDR,device_info/deviceClassIVDR,manual,Best-effort risk class MDR
+,vig:deviceRiskClassMDR,device_info/deviceClassIVDRType,manual,Best-effort risk class type
+,vig:deviceDateSection,device_info/DevicePlacedMarket,manual,Best-effort device date based
+,vig:deviceDateSection,device_info/DeviceFulfill,manual,Best-effort device date based
+,vig:competentAuthority,device_info/CompetentAuthName,manual,Best-effort competentAuthority
+,vig:consultingAuthority,device_info/RelevantName,manual,Best-effort consultingAuthority
+,vig:marketDistribution,device_info/distribution,transform,Map distributionCountry->distributionEEA and otherCountries->otherCountriesLI
+,vig:associatedDevicesorAccessoriesSection/vig:useOfAccessories,device_info/deviceAccessories,direct,Copy useOfAccessories
+,vig:associatedDevicesorAccessoriesSection/vig:otherAssociatedDevices,device_info/deviceAssociated,direct,Copy otherAssociatedDevices
+# --- Additional EUDAMED-only fields (now best-effort mapped) ---
+vig:ca_srn,admin_info/ncaName,direct,Copy text
+vig:countries,device_info/distribution,manual,Best-effort map to distributionEEA/otherCountries
+vig:is_psr_related,admin_info/psrId,manual,Only when PSR-related: value best-effort from DossierExtId
+vig:mf_srn,admin_info/contact_info/reporterMfr/mfrDetails/mfrSRN,direct,Copy text
+vig:mfr,admin_info/mfrRef,direct,Copy text
+vig:FileName,mfr_invest/manufacturersFinalComments,manual,Best-effort embed file name
+vig:FileURI,mfr_invest/manufacturersFinalComments,manual,Best-effort embed file URI
+vigbase:DossierExtId,admin_info/ncaReportNo,manual,Best-effort when MIR report ref missing
+vig:ActionDetails2/vig:attachment/vig:FileName,mfr_invest/manufacturersFinalComments,manual,Best-effort embed attachment file name
+vig:ActionDetails2/vig:attachment/vig:FileURI,mfr_invest/manufacturersFinalComments,manual,Best-effort embed attachment file URI
+vig:adminInfoSection/vig:arInformationSection/vig:arSRN,admin_info/contact_info/reporterAR/arDetails/ARSRN,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:firstName,admin_info/contact_info/reporterAR/arDetails/ARContactPersonFirstName,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:familyName,admin_info/contact_info/reporterAR/arDetails/ARContactPersonSecondName,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:electronicMail,admin_info/contact_info/reporterAR/arDetails/AREmailAddress,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:telephone,admin_info/contact_info/reporterAR/arDetails/ARPhone,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:streetName,admin_info/contact_info/reporterAR/arDetails/ARStreet,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:streetNumber,admin_info/contact_info/reporterAR/arDetails/ARStreetNum,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:cityName,admin_info/contact_info/reporterAR/arDetails/ARCity,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:postalZone,admin_info/contact_info/reporterAR/arDetails/ARPostCode,direct,Copy text
+vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:country,admin_info/contact_info/reporterAR/arDetails/ARCountry,direct,Copy text
+vig:mir_2FieldsType/vig:ca_srn,admin_info/ncaName,direct,Copy text
+vig:mir_2FieldsType/vig:countries,device_info/distribution,manual,Best-effort map to distributionEEA/otherCountries
+vig:mir_2FieldsType/vig:is_psr_related,admin_info/psrId,manual,Only when PSR-related: value best-effort from DossierExtId
+vig:mir_2FieldsType/vig:mf_srn,admin_info/contact_info/reporterMfr/mfrDetails/mfrSRN,direct,Copy text
+vig:mir_2FieldsType/vig:mfr,admin_info/mfrRef,direct,Copy text
+vig:mir_2FieldsType/vig:FileName,mfr_invest/manufacturersFinalComments,manual,Best-effort embed file name
+vig:mir_2FieldsType/vig:FileURI,mfr_invest/manufacturersFinalComments,manual,Best-effort embed file URI
+vig:mir_2FieldsType/vig:DossierExtId,admin_info/ncaReportNo,manual,Best-effort when MIR report ref missing
+vig:mir_2FieldsType/vig:ActionDetails2/vig:attachment/vig:FileName,mfr_invest/manufacturersFinalComments,manual,Best-effort embed attachment file name
+vig:mir_2FieldsType/vig:ActionDetails2/vig:attachment/vig:FileURI,mfr_invest/manufacturersFinalComments,manual,Best-effort embed attachment file URI
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arSRN,admin_info/contact_info/reporterAR/arDetails/ARSRN,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:firstName,admin_info/contact_info/reporterAR/arDetails/ARContactPersonFirstName,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:familyName,admin_info/contact_info/reporterAR/arDetails/ARContactPersonSecondName,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:electronicMail,admin_info/contact_info/reporterAR/arDetails/AREmailAddress,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:telephone,admin_info/contact_info/reporterAR/arDetails/ARPhone,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:streetName,admin_info/contact_info/reporterAR/arDetails/ARStreet,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:streetNumber,admin_info/contact_info/reporterAR/arDetails/ARStreetNum,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:cityName,admin_info/contact_info/reporterAR/arDetails/ARCity,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:postalZone,admin_info/contact_info/reporterAR/arDetails/ARPostCode,direct,Copy text
+vig:mir_2FieldsType/vig:adminInfoSection/vig:arInformationSection/vig:arContact/vig:geographicalAddress/vig:country,admin_info/contact_info/reporterAR/arDetails/ARCountry,direct,Copy text
+
